@@ -40,7 +40,8 @@ import registry.{
   PingdomAdapter,
   UrbanAirshipAdapter,
   SendgridAdapter,
-  StatusGatorAdapter
+  StatusGatorAdapter,
+  UnbounceAdapter
 }
 
 /**
@@ -64,6 +65,7 @@ object AdapterRegistry {
     val UrbanAirship = "com.urbanairship.connect"
     val Sendgrid   = "com.sendgrid"
     val StatusGator = "com.statusgator"
+    val Unbounce = "com.unbounce"
   }
 
   /**
@@ -95,6 +97,7 @@ object AdapterRegistry {
     case (Vendor.UrbanAirship, "v1")  => UrbanAirshipAdapter.toRawEvents(payload)
     case (Vendor.Sendgrid,     "v3")  => SendgridAdapter.toRawEvents(payload)
     case (Vendor.StatusGator,  "v1")  => StatusGatorAdapter.toRawEvents(payload)
+    case (Vendor.Unbounce,     "v1")  => UnbounceAdapter.toRawEvents(payload)
     case _ => s"Payload with vendor ${payload.api.vendor} and version ${payload.api.version} not supported by this version of Scala Common Enrich".failNel
   }
 
