@@ -30,6 +30,7 @@ lazy val root = project.in(file("."))
       Dependencies.Libraries.commonsLang,
       Dependencies.Libraries.commonsIo,
       Dependencies.Libraries.commonsCodec,
+      Dependencies.Libraries.commonsFileUpload,
       Dependencies.Libraries.useragent,
       Dependencies.Libraries.jacksonDatabind,
       Dependencies.Libraries.jsonValidator,
