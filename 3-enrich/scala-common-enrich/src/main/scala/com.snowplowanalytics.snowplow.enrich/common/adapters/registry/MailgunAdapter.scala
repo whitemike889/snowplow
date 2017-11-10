@@ -19,14 +19,15 @@ package registry
 
 // Java
 import java.net.URI
+
 import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.NameValuePair
 import javax.crypto.spec.SecretKeySpec
-import javax.crypto.Mac 
 
 // Scala
 import scala.util.matching.Regex
 import scala.collection.JavaConversions._
+import scala.util.control.NonFatal
 
 // Scalaz
 import scalaz._
@@ -65,7 +66,8 @@ object MailgunAdapter extends Adapter {
   private val TrackerVersion = "com.mailgun-v1"
 
   // Expected content type for a request body
-  private val ContentType = "application/x-www-form-urlencoded"
+  private val ContentTypes = List("application/x-www-form-urlencoded", "multipart/form-data")
+  private val ContentTypesStr = ContentTypes.mkString(" or ")
 
   // Schemas for reverse-engineering a Snowplow unstructured event
   private val EventSchemaMap = Map (
@@ -94,49 +96,82 @@ object MailgunAdapter extends Adapter {
    */
 def toRawEvents(payload: CollectorPayload)(implicit resolver: Resolver): ValidatedRawEvents = {
     (payload.body, payload.contentType) match {
-      case (None, _)                          => s"Request body is empty: no ${VendorName} events to process".failNel
-      case (_, None)                          => s"Request body provided but content type empty, expected ${ContentType} for ${VendorName}".failNel
-      case (_, Some(ct)) if ct != ContentType => s"Content type of ${ct} provided, expected ${ContentType} for ${VendorName}".failNel
-      case (Some(body),_)                     => {
-        if (body.isEmpty) {
-          s"${VendorName} event body is empty: nothing to process".failNel
-        } else {
-          val params = toMap(payload.querystring)
-          try {
-            val bodyMap = toMap(URLEncodedUtils.parse(URI.create("http://localhost/?" + body), "UTF-8").toList)
-            bodyMap.get("event") match {
-              case None            => s"No ${VendorName} event parameter provided: cannot determine event type".failNel
-              case Some(eventType) => {
-                (payloadBodyToEvent(bodyMap)) match {
-                  case (Failure(err)) => err.failNel
-                  case (Success(event)) => {
-                    lookupSchema(eventType.some, VendorName, EventSchemaMap) match {
-                      case Failure(str)  => str.fail
-                      case Success(schemaUri) => {
-                        NonEmptyList(RawEvent(
-                          api         = payload.api,
-                          parameters  = toUnstructEventParams(TrackerVersion, params, schemaUri, event, "srv"),
-                          contentType = payload.contentType,
-                          source      = payload.source,
-                          context     = payload.context
-                        )).success
-                      }
-                    } 
-                  }
+      case (None, _)                                                => s"Request body is empty: no ${VendorName} events to process".failNel
+      case (_, None)                                                => s"Request body provided but content type empty, expected ${ContentTypesStr} for ${VendorName}".failNel
+      case (_, Some(ct)) if !ContentTypes.exists(ct.startsWith(_))  => s"Content type of ${ct} provided, expected ${ContentTypesStr} for ${VendorName}".failNel
+      case (Some(body), _) if (body.isEmpty)                        => s"${VendorName} event body is empty: nothing to process".failNel
+      case (Some(body), Some(ct))                                   => {
+        val params = toMap(payload.querystring)
+        try {
+          val bodyMap = getBoundary(ct)
+                          .map(parseMultipartForm(body, _))
+                          .getOrElse(toMap(URLEncodedUtils.parse(URI.create("http://localhost/?" + body), "UTF-8").toList))
+          bodyMap.get("event") match {
+            case None            => s"No ${VendorName} event parameter provided: cannot determine event type".failNel
+            case Some(eventType) => {
+              (payloadBodyToEvent(bodyMap)) match {
+                case (Failure(err)) => err.failNel
+                case (Success(event)) => {
+                  lookupSchema(eventType.some, VendorName, EventSchemaMap) match {
+                    case Failure(str)  => str.fail
+                    case Success(schemaUri) => {
+                      NonEmptyList(RawEvent(
+                        api         = payload.api,
+                        parameters  = toUnstructEventParams(TrackerVersion, params, schemaUri, event, "srv"),
+                        contentType = payload.contentType,
+                        source      = payload.source,
+                        context     = payload.context
+                      )).success
+                    }
+                  } 
                 }
               }
             }
-          } catch { 
-            case e: Exception => {
-              val exception = JU.stripInstanceEtc(e.toString).orNull
-              s"${VendorName} could not parse body: [${exception}]".failNel
-            }
+          }
+        } catch { 
+          case NonFatal(e) => {
+            val exception = JU.stripInstanceEtc(e.getMessage).orNull
+            s"${VendorName}Adapter could not parse body: [${exception}]".failNel
           }
         }
       }
     }
   }
-  
+  /**
+  * Returns the boundary parameter for a message of media type multipart/form-data
+  * (https://www.ietf.org/rfc/rfc2616.txt and https://www.ietf.org/rfc/rfc2046.txt)
+  *
+  * @param contentType Header field of the form "multipart/form-data; boundary=353d603f-eede-4b49-97ac-724fbc54ea3c"
+  * @return boundary Option[String]
+  */
+  private val boundaryRegex = """multipart/form-data.*?boundary=(?:")?([\S ]{0,69})(?: )*(?:")?$""".r
+  private def getBoundary(contentType: String): Option[String] = contentType match {
+    case boundaryRegex(boundaryString) => Some(boundaryString)
+    case _ => None
+  }
+  /**
+   * Rudimentary parsing the form fields of a multipart/form-data into a Map[String, String]
+   * other fields will be discarded (see https://www.ietf.org/rfc/rfc1867.txt and https://www.ietf.org/rfc/rfc2046.txt).
+   * This parser will only take into account part headers of content-disposition type form-data
+   * and only the parameter name e.g.
+   * Content-Disposition: form-data; anything="notllokingintothis"; name="key"
+   *
+   * value
+   *
+   * @param body The body of the message
+   * @param boundary String that separates the body parts
+   * @return a map of the form fields and their values (other fields are dropped)
+   */
+  private val formDataRegex = """(?sm).*Content-Disposition:\s*form-data\s*;[ \S\t]*?name="([^"]+)"[ \S\t]*$.*(?<=^[ \t\S]*$)^\s*(.*?)(?:\s*)\z""".r
+  private def parseMultipartForm(body: String, boundary: String): Map[String, String] =
+    body
+      .split(s"--$boundary")
+      .flatMap( _ match {
+        case formDataRegex(k,v) => Some((k,v))
+        case _ => None
+      })
+      .toMap
+
   /**
    * Converts a querystring payload into an event
    * @param bodyMap The converted map from the querystring
