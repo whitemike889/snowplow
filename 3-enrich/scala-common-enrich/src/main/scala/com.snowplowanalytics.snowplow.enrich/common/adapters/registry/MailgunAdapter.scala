@@ -162,7 +162,7 @@ def toRawEvents(payload: CollectorPayload)(implicit resolver: Resolver): Validat
    * @param boundary String that separates the body parts
    * @return a map of the form fields and their values (other fields are dropped)
    */
-  private val formDataRegex = """(?sm).*Content-Disposition:\s*form-data\s*;[ \S\t]*?name="([^"]+)"[ \S\t]*$.*(?<=^[ \t\S]*$)^\s*(.*?)(?:\s*)\z""".r
+  private val formDataRegex = """(?sm).*Content-Disposition:\s*form-data\s*;[ \S\t]*?name="([^"]+)"[ \S\t]*$.*?(?<=^[ \t\S]*$)^\s*(.*?)(?:\s*)\z""".r
   private def parseMultipartForm(body: String, boundary: String): Map[String, String] =
     body
       .split(s"--$boundary")
