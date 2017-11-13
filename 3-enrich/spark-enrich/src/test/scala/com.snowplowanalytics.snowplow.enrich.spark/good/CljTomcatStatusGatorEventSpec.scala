@@ -24,28 +24,28 @@ import org.specs2.mutable.Specification
 object CljTomcatStatusGatorEventSpec {
   import EnrichJobSpec._
   val lines = Lines(
-    "2014-10-09  16:28:31    -   13  255.255.255.255   POST    255.255.255.255   /com.statusgator/v1   404 -  -    aid=email&cv=clj-0.6.0-tom-0.0.4&nuid=-   -   -   -   application%2Fx-www-form-urlencoded   bGFzdF9zdGF0dXM9d2FybiZzdGF0dXNfcGFnZV91cmw9aHR0cHMlM0ElMkYlMkZ3d3cuY2xvdWRmbGFyZXN0YXR1cy5jb20lMkYmc2VydmljZV9uYW1lPUNsb3VkRmxhcmUmZmF2aWNvbl91cmw9aHR0cHMlM0ElMkYlMkZkd3hqZDljZDZyd25vLmNsb3VkZnJvbnQubmV0JTJGZmF2aWNvbnMlMkZjbG91ZGZsYXJlLmljbyZvY2N1cnJlZF9hdD0yMDE2LTA1LTE5VDA5JTNBMjYlM0EzMSUyQjAwJTNBMDAmaG9tZV9wYWdlX3VybD1odHRwJTNBJTJGJTJGd3d3LmNsb3VkZmxhcmUuY29tJmN1cnJlbnRfc3RhdHVzPXVw"
+    "2017-11-11 15:37:08  - - 54.205.110.234  POST  54.205.110.234  /com.statusgator/v1 200 - Ruby  &cv=clj-1.1.0-tom-0.2.0&nuid=61d4eae4-f00f-4a87-8d53-8a396a1a77a6 - - - application%2Fx-www-form-urlencoded c2VydmljZV9uYW1lPUFtYXpvbitXZWIrU2VydmljZXMmZmF2aWNvbl91cmw9aHR0cHMlM0ElMkYlMkZkd3hqZDljZDZyd25vLmNsb3VkZnJvbnQubmV0JTJGZmF2aWNvbnMlMkZhbWF6b24td2ViLXNlcnZpY2VzLmljbyZzdGF0dXNfcGFnZV91cmw9aHR0cCUzQSUyRiUyRnN0YXR1cy5hd3MuYW1hem9uLmNvbSUyRiZob21lX3BhZ2VfdXJsPWh0dHAlM0ElMkYlMkZhd3MuYW1hem9uLmNvbSUyRiZjdXJyZW50X3N0YXR1cz13YXJuJmxhc3Rfc3RhdHVzPXVwJm9jY3VycmVkX2F0PTIwMTctMTEtMTFUMTUlM0EzNiUzQTE4JTJCMDAlM0EwMA"
     )
 
   val expected = List(
-    "email",
+    null,
     "srv",
     etlTimestamp,
-    "2014-10-09 16:28:31.000",
+    "2017-11-11 15:37:08.000",
     null,
     "unstruct",
     null, // We can't predict the event_id
     null,
     null, // No tracker namespace
     "com.statusgator-v1",
-    "clj-0.6.0-tom-0.0.4",
+    "clj-1.1.0-tom-0.2.0",
     etlVersion,
     null, // No user_id set
-    "255.255.x.x",
+    "54.205.x.x",
     null,
     null,
     null,
-    "-", // TODO: fix this, https://github.com/snowplow/snowplow/issues/1133
+    "61d4eae4-f00f-4a87-8d53-8a396a1a77a6",
     null, // No geo-location for this IP address
     null,
     null,
@@ -86,7 +86,7 @@ object CljTomcatStatusGatorEventSpec {
     null, //
     null, //
     null, //
-    """{"schema":"iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0","data":{"schema":"iglu:com.statusgator/status_change/jsonschema/1-0-0","data":{"last_status":"warn","status_page_url":"https://www.cloudflarestatus.com/","service_name":"CloudFlare","favicon_url":"https://dwxjd9cd6rwno.cloudfront.net/favicons/cloudflare.ico","occurred_at":"2016-05-19T09:26:31+00:00","home_page_url":"http://www.cloudflare.com","current_status":"up"}}}""",
+    """{"schema":"iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0","data":{"schema":"iglu:com.statusgator/status_change/jsonschema/1-0-0","data":{"last_status":"up","status_page_url":"http://status.aws.amazon.com/","service_name":"Amazon Web Services","favicon_url":"https://dwxjd9cd6rwno.cloudfront.net/favicons/amazon-web-services.ico","occurred_at":"2017-11-11T15:36:18+00:00","home_page_url":"http://aws.amazon.com/","current_status":"warn"}}}""",
     null, // Transaction fields empty
     null, //
     null, //
@@ -105,6 +105,12 @@ object CljTomcatStatusGatorEventSpec {
     null, //
     null, //
     null, //
+    "Ruby",
+    "Unknown",
+    "Unknown",
+    null,
+    "unknown",
+    "OTHER",
     null,
     null,
     null,
@@ -119,18 +125,12 @@ object CljTomcatStatusGatorEventSpec {
     null,
     null,
     null,
+    "Unknown",
+    "Unknown",
+    "Other",
     null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
+    "Unknown",
+    "0",
     null,
     null,
     null,
