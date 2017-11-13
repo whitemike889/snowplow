@@ -51,21 +51,21 @@ import registry.{
 object AdapterRegistry {
 
   private object Vendor {
-    val Snowplow   = "com.snowplowanalytics.snowplow"
-    val Redirect   = "r"
-    val Iglu       = "com.snowplowanalytics.iglu"
-    val Callrail   = "com.callrail"
-    val Mailchimp  = "com.mailchimp"
-    val Mailgun    = "com.mailgun"
-    val Mandrill   = "com.mandrill"
-    val Olark      = "com.olark"
-    val Pagerduty  = "com.pagerduty"
-    val Pingdom    = "com.pingdom"
-    val Cloudfront = "com.amazon.aws.cloudfront"
+    val Snowplow     = "com.snowplowanalytics.snowplow"
+    val Redirect     = "r"
+    val Iglu         = "com.snowplowanalytics.iglu"
+    val Callrail     = "com.callrail"
+    val Mailchimp    = "com.mailchimp"
+    val Mailgun      = "com.mailgun"
+    val Mandrill     = "com.mandrill"
+    val Olark        = "com.olark"
+    val Pagerduty    = "com.pagerduty"
+    val Pingdom      = "com.pingdom"
+    val Cloudfront   = "com.amazon.aws.cloudfront"
     val UrbanAirship = "com.urbanairship.connect"
-    val Sendgrid   = "com.sendgrid"
-    val StatusGator = "com.statusgator"
-    val Unbounce = "com.unbounce"
+    val Sendgrid     = "com.sendgrid"
+    val StatusGator  = "com.statusgator"
+    val Unbounce     = "com.unbounce"
   }
 
   /**
