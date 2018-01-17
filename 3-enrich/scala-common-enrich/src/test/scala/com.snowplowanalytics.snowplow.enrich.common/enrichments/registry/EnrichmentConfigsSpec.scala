@@ -297,10 +297,11 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
 
   "Parsing a valid pii_enrichment_config enrichment JSON" should {
     "successfully construct a PiiPsedonymizerEnrichment case object" in {
-      import PiiConstants._
+      import pii._
       val piiPseudonymizerEnrichmentJson =
         parse("""{
           |  "enabled": true,
+          |  "emitIdentificationEvent": true,
           |  "parameters": {
           |    "pii": [
           |      {
@@ -325,13 +326,14 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
           |}""".stripMargin)
 
       val schemaKey =
-        SchemaKey("com.snowplowanalytics.snowplow.enrichments", "pii_enrichment_config", "jsonschema", "1-0-0")
+        SchemaKey("com.snowplowanalytics.snowplow.enrichments", "pii_enrichment_config", "jsonschema", "2-0-0")
 
       val result = PiiPseudonymizerEnrichment.parse(piiPseudonymizerEnrichmentJson, schemaKey)
-
       result must beSuccessful.like {
         case piiRes: PiiPseudonymizerEnrichment => {
-          (piiRes.fieldList.size must_== 2) and
+          (piiRes.strategy must haveClass[PiiStrategyPseudonymize]) and
+            (piiRes.strategy.asInstanceOf[PiiStrategyPseudonymize].hashFunction.toString must contain("SHA-256")) and
+            (piiRes.fieldList.size must_== 2) and
             (piiRes.fieldList(0) must haveClass[PiiScalar]) and
             (piiRes.fieldList(0).asInstanceOf[PiiScalar].strategy must haveClass[PiiStrategyPseudonymize]) and
             (piiRes
@@ -342,7 +344,6 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
               .hashFunction("1234".getBytes("UTF-8"))
               must_== "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4") and
             (piiRes.fieldList(0).asInstanceOf[PiiScalar].fieldMutator must_== ScalarMutators.get("user_id").get) and
-            (piiRes.fieldList(1).asInstanceOf[PiiJson].strategy must haveClass[PiiStrategyPseudonymize]) and
             (piiRes.fieldList(1).asInstanceOf[PiiJson].fieldMutator must_== JsonMutators.get("contexts").get) and
             (piiRes
               .fieldList(1)
