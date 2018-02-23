@@ -15,13 +15,13 @@ package snowplow.enrich
 package common.enrichments.registry
 package pii
 
-// Java
-import java.security.MessageDigest
-
 // Json4s
 import org.json4s.JsonDSL._
 import org.json4s.Extraction.decompose
 import org.json4s.{CustomSerializer, JObject}
+
+// Scalaz
+import scalaz.{Failure, Success}
 
 /**
  * Custom serializer for PiiStrategy class
@@ -32,10 +32,14 @@ private[pii] final class PiiStrategySerializer
         case jo: JObject =>
           implicit val json4sFormats = formats
           val function               = (jo \ "pseudonymize" \ "hashFunction").extract[String]
-          PiiStrategyPseudonymize(MessageDigest.getInstance(function))
+          PiiPseudonymizerEnrichment.getHashFunction(function) match {
+            case Success(hf) => PiiStrategyPseudonymize(function, hf)
+            case Failure(msg) =>
+              println(msg); PiiStrategyPseudonymize("IDENTITY", (b: Array[Byte]) => b.mkString) // FIXME: What to do here?
+          }
       }, {
         case psp: PiiStrategyPseudonymize =>
-          "pseudonymize" -> ("hashFunction" -> psp.hashFunction.getAlgorithm)
+          "pseudonymize" -> ("hashFunction" -> psp.functionName)
       }))
 
 /**

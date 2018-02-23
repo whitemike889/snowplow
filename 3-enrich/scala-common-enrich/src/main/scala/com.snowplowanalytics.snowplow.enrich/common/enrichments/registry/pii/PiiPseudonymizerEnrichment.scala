@@ -28,7 +28,7 @@ import org.json4s.jackson.JsonMethods.{compact, parse, render}
 import org.json4s.jackson.Serialization.write
 
 // Java
-import java.security.{MessageDigest, NoSuchAlgorithmException}
+import org.apache.commons.codec.digest.DigestUtils
 
 // Java libraries
 import com.fasterxml.jackson.databind.JsonNode
@@ -74,16 +74,36 @@ object PiiPseudonymizerEnrichment extends ParseableEnrichment {
       piiFieldList     <- extractFields(piiFields)
     } yield
       if (enabled)
-        PiiPseudonymizerEnrichment(piiFieldList, emitIdentificationEvent, PiiStrategyPseudonymize(hashFunction))
-      else PiiPseudonymizerEnrichment(List(), emitIdentificationEvent = false, PiiStrategyPseudonymize(hashFunction))
+        PiiPseudonymizerEnrichment(piiFieldList,
+                                   emitIdentificationEvent,
+                                   PiiStrategyPseudonymize(hashFunctionName, hashFunction))
+      else
+        PiiPseudonymizerEnrichment(List(),
+                                   emitIdentificationEvent = false,
+                                   PiiStrategyPseudonymize(hashFunctionName, hashFunction))
   }.leftMap(_.toProcessingMessageNel)
 
-  private def getHashFunction(strategyFunction: String): Validation[String, MessageDigest] =
-    try {
-      MessageDigest.getInstance(strategyFunction).success
-    } catch {
-      case e: NoSuchAlgorithmException =>
-        s"Could not parse PII enrichment config: ${e.getMessage}".failure
+  private[pii] def getHashFunction(strategyFunction: String): Validation[String, DigestFunction] =
+    strategyFunction match {
+      case "MD2" => { (b: Array[Byte]) =>
+        DigestUtils.md2Hex(b)
+      }.success
+      case "MD5" => { (b: Array[Byte]) =>
+        DigestUtils.md5Hex(b)
+      }.success
+      case "SHA-1" => { (b: Array[Byte]) =>
+        DigestUtils.sha1Hex(b)
+      }.success
+      case "SHA-256" => { (b: Array[Byte]) =>
+        DigestUtils.sha256Hex(b)
+      }.success
+      case "SHA-384" => { (b: Array[Byte]) =>
+        DigestUtils.sha384Hex(b)
+      }.success
+      case "SHA-512" => { (b: Array[Byte]) =>
+        DigestUtils.sha512Hex(b)
+      }.success
+      case fName => s"Unknown function $fName".failure
     }
 
   private def extractFields(piiFields: List[JObject]): Validation[String, List[PiiField]] =
@@ -139,17 +159,13 @@ object PiiPseudonymizerEnrichment extends ParseableEnrichment {
 }
 
 /**
- * Implements a pseudonymization strategy using any algorithm known to MessageDigest
- * @param hashFunction the MessageDigest function to apply
+ * Implements a pseudonymization strategy using any algorithm known to DigestFunction
+ * @param hashFunction the DigestFunction to apply
  */
-final case class PiiStrategyPseudonymize(hashFunction: MessageDigest) extends PiiStrategy {
+final case class PiiStrategyPseudonymize(functionName: String, hashFunction: DigestFunction) extends PiiStrategy {
   val TextEncoding                                 = "UTF-8"
   override def scramble(clearText: String): String = hash(clearText)
-  def hash(text: String): String = {
-    val bytes = hashFunction.digest(text.getBytes(TextEncoding))
-    hashFunction.reset()
-    String.format("%0" + bytes.size * 2 + "x", new java.math.BigInteger(1, bytes))
-  }
+  def hash(text: String): String                   = hashFunction(text.getBytes(TextEncoding))
 }
 
 /**

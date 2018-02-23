@@ -150,15 +150,18 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "ip_lookups" -> ipEnrichment,
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
-                    fieldMutator = ScalarMutators.get("user_id").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
-                    fieldMutator = ScalarMutators.get("user_ipaddress").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
-                    fieldMutator = ScalarMutators.get("ip_domain").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
-                    fieldMutator = ScalarMutators.get("user_fingerprint").get)
-        )))
+          PiiScalar(fieldMutator = ScalarMutators.get("user_id").get),
+          PiiScalar(
+            fieldMutator = ScalarMutators.get("user_ipaddress").get
+          ),
+          PiiScalar(fieldMutator = ScalarMutators.get("ip_domain").get),
+          PiiScalar(
+            fieldMutator = ScalarMutators.get("user_fingerprint").get
+          )
+        ),
+        false,
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
+      )
     )
     val output   = commonSetup(enrichmentMap = enrichmentMap)
     val expected = new EnrichedEvent()
@@ -191,26 +194,23 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-0-*").toOption.get,
             jsonPath        = "$.emailAddress"
           ),
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-1-0").toOption.get,
             jsonPath        = "$.data.emailAddress2"
           ),
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("unstruct_event").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.mailgun/message_clicked/jsonschema/1-0-0").toOption.get,
             jsonPath        = "$.ip"
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
 
@@ -256,14 +256,13 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-*").toOption.get,
             jsonPath        = "$.field.that.does.not.exist.in.this.instance"
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
 
@@ -296,14 +295,13 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-0-*").toOption.get,
             jsonPath        = "$.['emailAddress', 'emailAddress2', 'emailAddressNonExistent']" // Last case throws an exeption if misconfigured
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
 
@@ -338,14 +336,13 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-0").toOption.get,
             jsonPath        = "$.emailAddress"
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
     val output   = commonSetup(enrichmentMap = enrichmentMap)
@@ -380,14 +377,13 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       "pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-*").toOption.get,
             jsonPath        = "$.someInt"
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
     val output   = commonSetup(enrichmentMap = enrichmentMap)
@@ -443,7 +439,7 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
           )
         ),
         false,
-        PiiStrategyPseudonymize(MessageDigest.getInstance("SHA-256"))
+        PiiStrategyPseudonymize("SHA-256", hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b))
       )
     )
     val output   = commonSetup(enrichmentMap = enrichmentMap)

@@ -332,17 +332,10 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
       result must beSuccessful.like {
         case piiRes: PiiPseudonymizerEnrichment => {
           (piiRes.strategy must haveClass[PiiStrategyPseudonymize]) and
-            (piiRes.strategy.asInstanceOf[PiiStrategyPseudonymize].hashFunction.toString must contain("SHA-256")) and
+            (piiRes.strategy.asInstanceOf[PiiStrategyPseudonymize].hashFunction("1234".getBytes("UTF-8"))
+              must_== "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4") and
             (piiRes.fieldList.size must_== 2) and
             (piiRes.fieldList(0) must haveClass[PiiScalar]) and
-            (piiRes.fieldList(0).asInstanceOf[PiiScalar].strategy must haveClass[PiiStrategyPseudonymize]) and
-            (piiRes
-              .fieldList(0)
-              .asInstanceOf[PiiScalar]
-              .strategy
-              .asInstanceOf[PiiStrategyPseudonymize]
-              .hashFunction("1234".getBytes("UTF-8"))
-              must_== "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4") and
             (piiRes.fieldList(0).asInstanceOf[PiiScalar].fieldMutator must_== ScalarMutators.get("user_id").get) and
             (piiRes.fieldList(1).asInstanceOf[PiiJson].fieldMutator must_== JsonMutators.get("contexts").get) and
             (piiRes
@@ -350,14 +343,7 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
               .asInstanceOf[PiiJson]
               .schemaCriterion
               .toString must_== "iglu:com.acme/email_sent/jsonschema/1-*-*") and
-            (piiRes.fieldList(1).asInstanceOf[PiiJson].jsonPath must_== "$.emailAddress") and
-            (piiRes
-              .fieldList(1)
-              .asInstanceOf[PiiJson]
-              .strategy
-              .asInstanceOf[PiiStrategyPseudonymize]
-              .hashFunction("12345".getBytes("UTF-8"))
-              must_== "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5")
+            (piiRes.fieldList(1).asInstanceOf[PiiJson].jsonPath must_== "$.emailAddress")
         }
       }
     }
