@@ -27,7 +27,7 @@ import org.json4s.jackson.JsonMethods.{compact, parse, render}
 import org.json4s.DefaultFormats
 
 // Java
-import java.security.{MessageDigest, NoSuchAlgorithmException}
+import org.apache.commons.codec.digest.DigestUtils
 
 // Java libraries
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper, SerializationFeature}
@@ -50,7 +50,8 @@ import common.utils.ScalazJson4sUtils
 import common.outputs.EnrichedEvent
 
 object PiiConstants {
-  type Mutator = (EnrichedEvent, String => String) => Unit
+  type DigestFunction = Function1[Array[Byte], String]
+  type Mutator        = (EnrichedEvent, String => String) => Unit
 
   /**
    * This and the next constant maps from a config field name to an EnrichedEvent mutator. The structure is such so that
@@ -189,12 +190,27 @@ object PiiPseudonymizerEnrichment extends ParseableEnrichment {
     } yield if (enabled) PiiPseudonymizerEnrichment(piiFieldList) else PiiPseudonymizerEnrichment(List())
   }.leftMap(_.toProcessingMessageNel)
 
-  private def getHashFunction(strategyFunction: String): Validation[String, MessageDigest] =
-    try {
-      MessageDigest.getInstance(strategyFunction).success
-    } catch {
-      case e: NoSuchAlgorithmException =>
-        s"Could not parse PII enrichment config: ${e.getMessage}".failure
+  private def getHashFunction(strategyFunction: String): Validation[String, DigestFunction] =
+    strategyFunction match {
+      case "MD2" => { (b: Array[Byte]) =>
+        DigestUtils.md2Hex(b)
+      }.success
+      case "MD5" => { (b: Array[Byte]) =>
+        DigestUtils.md5Hex(b)
+      }.success
+      case "SHA-1" => { (b: Array[Byte]) =>
+        DigestUtils.sha1Hex(b)
+      }.success
+      case "SHA-256" => { (b: Array[Byte]) =>
+        DigestUtils.sha256Hex(b)
+      }.success
+      case "SHA-384" => { (b: Array[Byte]) =>
+        DigestUtils.sha384Hex(b)
+      }.success
+      case "SHA-512" => { (b: Array[Byte]) =>
+        DigestUtils.sha512Hex(b)
+      }.success
+      case fName => s"Unknown function $fName".failure
     }
 
   private def extractFields(piiFields: List[JObject], strategy: PiiStrategy): Validation[String, List[PiiField]] =
@@ -358,15 +374,11 @@ case class ScrambleMapFunction(val strategy: PiiStrategy) extends MapFunction {
 }
 
 /**
- * Implements a pseudonymization strategy using any algorithm known to MessageDigest
- * @param hashFunction the MessageDigest function to apply
+ * Implements a pseudonymization strategy using any algorithm known to DigestFunction
+ * @param hashFunction the DigestFunction to apply
  */
-case class PiiStrategyPseudonymize(hashFunction: MessageDigest) extends PiiStrategy {
+case class PiiStrategyPseudonymize(hashFunction: PiiConstants.DigestFunction) extends PiiStrategy {
   val TextEncoding                                 = "UTF-8"
   override def scramble(clearText: String): String = hash(clearText)
-  def hash(text: String): String = {
-    val bytes = hashFunction.digest(text.getBytes(TextEncoding))
-    hashFunction.reset()
-    String.format("%0" + bytes.size * 2 + "x", new java.math.BigInteger(1, bytes))
-  }
+  def hash(text: String): String                   = hashFunction(text.getBytes(TextEncoding))
 }

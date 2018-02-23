@@ -339,8 +339,8 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
               .asInstanceOf[PiiScalar]
               .strategy
               .asInstanceOf[PiiStrategyPseudonymize]
-              .hashFunction
-              .toString must contain("SHA-256")) and
+              .hashFunction("1234".getBytes("UTF-8"))
+              must_== "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4") and
             (piiRes.fieldList(0).asInstanceOf[PiiScalar].fieldMutator must_== ScalarMutators.get("user_id").get) and
             (piiRes.fieldList(1).asInstanceOf[PiiJson].strategy must haveClass[PiiStrategyPseudonymize]) and
             (piiRes.fieldList(1).asInstanceOf[PiiJson].fieldMutator must_== JsonMutators.get("contexts").get) and
@@ -355,8 +355,8 @@ class EnrichmentConfigsSpec extends Specification with ValidationMatchers {
               .asInstanceOf[PiiJson]
               .strategy
               .asInstanceOf[PiiStrategyPseudonymize]
-              .hashFunction
-              .toString must contain("SHA-256"))
+              .hashFunction("12345".getBytes("UTF-8"))
+              must_== "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5")
         }
       }
     }

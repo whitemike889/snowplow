@@ -26,7 +26,7 @@ import org.json4s.jackson.JsonMethods.parse
 // Java
 import java.net.URI
 import org.joda.time.DateTime
-import java.security.MessageDigest
+import org.apache.commons.codec.digest.DigestUtils
 
 // Snowplow
 import common.loaders.{CollectorApi, CollectorContext, CollectorPayload, CollectorSource}
@@ -147,13 +147,13 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("ip_lookups" -> ipEnrichment),
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
                     fieldMutator = ScalarMutators.get("user_id").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
                     fieldMutator = ScalarMutators.get("user_ipaddress").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
                     fieldMutator = ScalarMutators.get("ip_domain").get),
-          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+          PiiScalar(strategy     = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
                     fieldMutator = ScalarMutators.get("user_fingerprint").get)
         )))
     )
@@ -189,19 +189,19 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-0-*").toOption.get,
             jsonPath        = "$.emailAddress"
           ),
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-1-0").toOption.get,
             jsonPath        = "$.data.emailAddress2"
           ),
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("unstruct_event").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.mailgun/message_clicked/jsonschema/1-0-0").toOption.get,
             jsonPath        = "$.ip"
@@ -252,7 +252,7 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-*").toOption.get,
             jsonPath        = "$.field.that.does.not.exist.in.this.instance"
@@ -290,7 +290,7 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-0-*").toOption.get,
             jsonPath        = "$.['emailAddress', 'emailAddress2', 'emailAddressNonExistent']" // Last case throws an exeption if misconfigured
@@ -330,7 +330,7 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-0").toOption.get,
             jsonPath        = "$.emailAddress"
@@ -370,7 +370,7 @@ class PiiPseudonymizerEnrichmentSpec extends Specification with ValidationMatche
       ("pii_enrichment_config" -> PiiPseudonymizerEnrichment(
         List(
           PiiJson(
-            strategy        = PiiStrategyPseudonymize(hashFunction = MessageDigest.getInstance("SHA-256")),
+            strategy        = PiiStrategyPseudonymize(hashFunction = (b: Array[Byte]) => DigestUtils.sha256Hex(b)),
             fieldMutator    = JsonMutators.get("contexts").get,
             schemaCriterion = SchemaCriterion.parse("iglu:com.acme/email_sent/jsonschema/1-*-*").toOption.get,
             jsonPath        = "$.someInt"
