@@ -38,8 +38,8 @@ object PageViewWithContextSpec {
     "js-0.13.1",
     "ssc-0.1.0-stdout",
     EnrichVersion,
-    "alex 123",
-    "10.0.2.x",
+    "9a8418f7ec966d75e207a407c9def52c46f391e4",
+    "7135f2790b847ec9ec865f669b00b0a97ac33ad0",
     "1804954790",
     "3c1757544e39bca4",
     "25",
@@ -156,7 +156,8 @@ object PageViewWithContextSpec {
     "jsonschema",
     "1-0-0",
     "",
-    ""
+    "",
+    """{"schema":"iglu:com.snowplowanalytics.snowplow/pii_transformation/jsonschema/1-0-0","data":{"pii":{"pojo":[{"fieldName":"user_ipaddress","originalValue":"10.0.2.x","modifiedValue":"7135f2790b847ec9ec865f669b00b0a97ac33ad0"},{"fieldName":"user_id","originalValue":"alex 123","modifiedValue":"9a8418f7ec966d75e207a407c9def52c46f391e4"}]},"strategy":{"pseudonymize":{"hashFunction":"SHA-1"}}}}"""
     )
 }
 

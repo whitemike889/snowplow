@@ -207,6 +207,48 @@ object SpecHelpers {
               |"internalDomains": ["www.subdomain1.snowplowanalytics.com"]
             |}
           |}
+        |},
+        |{
+          |"schema": "iglu:com.snowplowanalytics.snowplow.enrichments/pii_enrichment_config/jsonschema/2-0-0",
+          |"data": {
+            |"vendor": "com.snowplowanalytics.snowplow.enrichments",
+            |"name": "pii_enrichment_config",
+            |"emitEvent": true,
+            |"enabled": true,
+            |"parameters": {
+              |"pii": [
+                |{
+                  |"pojo": {
+                    |"field": "user_id"
+                  |}
+                |},
+                |{
+                  |"pojo": {
+                    |"field": "user_ipaddress"
+                  |}
+                |},
+                |{
+                  |"json": {
+                    |"field": "unstruct_event",
+                    |"schemaCriterion": "iglu:com.mailgun/message_delivered/jsonschema/1-0-*",
+                    |"jsonPath": "$$['recipient']"
+                  |}
+                |},
+                |{
+                  |"json": {
+                    |"field": "unstruct_event",
+                    |"schemaCriterion": "iglu:com.mailchimp/subscribe/jsonschema/1-*-*",
+                    |"jsonPath": "$$.data.['email', 'ip_opt']"
+                  |}
+                |}
+              |],
+              |"strategy": {
+                |"pseudonymize": {
+                  |"hashFunction": "SHA-1"
+                |}
+              |}
+            |}
+          |}
         |}
       |]
     |}""".stripMargin.replaceAll("[\n\r]","").stripMargin.replaceAll("[\n\r]","")
@@ -216,7 +258,7 @@ object SpecHelpers {
       aws = AWSConfig("default", "default"),
       streams = StreamsConfig(
         InConfig("raw"),
-        OutConfig("enriched", "bad", "partitionkey"),
+        OutConfig("enriched", "pii", "bad", "partitionkey"),
         KinesisConfig("region", 10, "TRIM_HORIZON", None, BackoffPolicyConfig(10, 100)),
         KafkaConfig("brokers", 1),
         NsqConfig("channel", "localhost", 4160, "localhost", 4161),
@@ -225,8 +267,8 @@ object SpecHelpers {
       ),
       monitoring = None)
 
-    val validatedResolver = for {
-      json <- JsonUtils.extractJson("", """{
+    val igluCentralDefaultConfig =
+      """{
         "schema": "iglu:com.snowplowanalytics.iglu/resolver-config/jsonschema/1-0-0",
         "data": {
 
@@ -245,7 +287,18 @@ object SpecHelpers {
           ]
         }
       }
-      """)
+      """
+
+    val igluConfig = {
+      val resolverEnvVar = for {
+        config <- sys.env.get("ENRICH_RESOLVER_CONFIG")
+        if config.nonEmpty
+      } yield config
+      resolverEnvVar.getOrElse(igluCentralDefaultConfig)
+    }
+
+    val validatedResolver = for {
+      json <- JsonUtils.extractJson("", igluConfig)
       resolver <- Resolver.parse(json).leftMap(_.toString)
     } yield resolver
 
